@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Typecheck (mypy)
+        run: mypy ai_toolkit/core
+      - name: Unit tests
+        run: python -m unittest discover -s tests -q
+      - name: CLI smoke
+        run: |
+          python -m ai_toolkit run tram --algo ucs --N 20 --trace-out /tmp/trace.jsonl
+          python -m ai_toolkit bench tram --Ns "10,20" --algo ucs --repeats 1 --format jsonl --out /tmp/bench.jsonl
